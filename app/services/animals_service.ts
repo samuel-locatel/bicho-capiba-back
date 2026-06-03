@@ -52,8 +52,8 @@ export default class AnimalsService {
     return animal;
   }
 
-  static async getAnimal(animalId: string) {
-    const animal = await Animal.query()
+  static async getAnimal(animalId: string, currentUser?: any) {
+    const query = Animal.query()
       .where('uuid', animalId)
       .preload('cor')
       .preload('raca')
@@ -63,8 +63,20 @@ export default class AnimalsService {
       })
       .preload('ong', (query) => {
         query.select('id', 'nome', 'email', 'telefone');
-      })
-      .firstOrFail();
+      });
+      
+      console.log('Current User:', currentUser);
+
+    if (currentUser) {
+      query.preload('likes', (likeQuery) => {
+        likeQuery.where('user_id', currentUser.id);
+      });
+    }
+
+
+    const animal = await query.firstOrFail();
+    // console.log(animal);
+
 
     return animal;
   }
@@ -128,12 +140,12 @@ export default class AnimalsService {
   }
 
   static async fetchFavorites(user: User, pagination: { page: number; limit: number }) {
-    const cacheKey = `user:${user.id}:likedAnimals`;
-    const cache = await CacheManager.get(cacheKey);
+    // const cacheKey = `user:${user.id}:likedAnimals`;
+    // const cache = await CacheManager.get(cacheKey);
 
-    if (cache) {
-      return cache;
-    }
+    // if (cache) {
+    //   return cache;
+    // }
 
     const likedAnimals = await user
       .related('likes')
@@ -149,7 +161,7 @@ export default class AnimalsService {
       .preload('cor')
       .paginate(pagination.page, pagination.limit);
 
-    await CacheManager.create(cacheKey, JSON.stringify(likedAnimals));
+    // await CacheManager.create(cacheKey, JSON.stringify(likedAnimals));
     return likedAnimals;
   }
 

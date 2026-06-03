@@ -40,10 +40,10 @@ export default class AnimalsController {
     }
   }
 
-  async show({ response, params }: HttpContext) {
+  async show({ response, params, currentUser }: HttpContext) {
     try {
       const { id } = params;
-      const data = await AnimalsService.getAnimal(id);
+      const data = await AnimalsService.getAnimal(id, currentUser);
 
       return responseWithSuccess(response, data);
     } catch (error) {

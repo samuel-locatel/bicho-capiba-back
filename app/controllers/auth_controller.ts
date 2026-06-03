@@ -26,7 +26,7 @@ export default class AuthController {
       return response.status(201).json({ user, token });
     } catch (error) {
       return response
-        .status(404)
+        .status(error.status || 500)
         .json({ message: 'Error creating user', error: error.message });
     }
   }
