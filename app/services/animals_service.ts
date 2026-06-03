@@ -156,7 +156,7 @@ export default class AnimalsService {
       .preload('cor')
       .paginate(pagination.page, pagination.limit);
 
-    // await CacheManager.create(cacheKey, JSON.stringify(likedAnimals));
+    await CacheManager.create(cacheKey, JSON.stringify(likedAnimals));
     return likedAnimals;
   }
 
