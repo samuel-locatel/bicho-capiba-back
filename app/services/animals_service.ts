@@ -64,8 +64,6 @@ export default class AnimalsService {
       .preload('ong', (query) => {
         query.select('id', 'nome', 'email', 'telefone');
       });
-      
-      console.log('Current User:', currentUser);
 
     if (currentUser) {
       query.preload('likes', (likeQuery) => {
@@ -73,10 +71,7 @@ export default class AnimalsService {
       });
     }
 
-
     const animal = await query.firstOrFail();
-    // console.log(animal);
-
 
     return animal;
   }
@@ -140,12 +135,12 @@ export default class AnimalsService {
   }
 
   static async fetchFavorites(user: User, pagination: { page: number; limit: number }) {
-    // const cacheKey = `user:${user.id}:likedAnimals`;
-    // const cache = await CacheManager.get(cacheKey);
+    const cacheKey = `user:${user.id}:likedAnimals`;
+    const cache = await CacheManager.get(cacheKey);
 
-    // if (cache) {
-    //   return cache;
-    // }
+    if (cache) {
+      return cache;
+    }
 
     const likedAnimals = await user
       .related('likes')
