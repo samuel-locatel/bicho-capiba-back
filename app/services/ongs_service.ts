@@ -4,18 +4,19 @@ import AppError from '../helpers/app_error.js';
 import ImageUpload from '../helpers/image_upload.js';
 import CacheManager from '../helpers/cache_manager.js';
 import brazilFinder from '../helpers/brazil_finder.js';
+import { ensureEmailIsAvailable } from '../helpers/email_availability.js';
+import hash from '@adonisjs/core/services/hash';
 
 export default class OngsService {
   static async create(data: any) {
     const existingOng = await Ong.query().where('cnpj', data.cnpj).first();
-    console.log(existingOng);
     if (existingOng) {
       throw AppError.E_CONFLICT('CNPJ already registered');
     }
 
-    console.log(data);
+    await ensureEmailIsAvailable(data.email);
+
     const isValidCnpj = await brazilFinder.cnpjFinder(data.cnpj);
-    console.log(isValidCnpj);
     if (!isValidCnpj) {
       throw AppError.E_UNPROCESSABLE_ENTITY('Invalid CNPJ');
     }
@@ -33,8 +34,9 @@ export default class OngsService {
     ong.numero = data.numero;
     ong.complemento = data.complemento || null;
     ong.descricao = data.descricao || null;
-    ong.latitude = data.latitude || null;
-    ong.longitude = data.longitude || null;
+    const coordinates = await brazilFinder.geocode(data);
+    ong.latitude = coordinates?.latitude ?? null;
+    ong.longitude = coordinates?.longitude ?? null;
     ong.responsavelTecnico = data.responsavelTecnico || null;
     ong.quantidadeAnimais = data.quantidadeAnimais || 0;
     ong.telefone = data.telefone;
@@ -95,8 +97,27 @@ export default class OngsService {
       await Ong.related('images').create({ url: imagePath });
     }
 
-    const { images, ...ong } = data;
+    const { images, currentPassword, ...ong } = data;
+
+    if (ong.password) {
+      const isValid = currentPassword && (await hash.verify(Ong.password, currentPassword));
+      if (!isValid) {
+        throw AppError.E_UNPROCESSABLE_ENTITY('Senha atual incorreta');
+      }
+    }
+
     Ong.merge(ong);
+
+    const addressFields = ['rua', 'numero', 'bairro', 'cidade', 'estado', 'cep'];
+    const addressChanged = addressFields.some((field) => field in ong);
+
+    if (addressChanged || !Ong.latitude || !Ong.longitude) {
+      const coordinates = await brazilFinder.geocode(Ong);
+      if (coordinates) {
+        Ong.latitude = coordinates.latitude;
+        Ong.longitude = coordinates.longitude;
+      }
+    }
 
     await Ong.save();
     return Ong;

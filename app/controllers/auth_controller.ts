@@ -2,37 +2,30 @@ import User from '#models/user';
 import JwtService from '#services/jwt_service';
 import type { HttpContext } from '@adonisjs/core/http';
 import { registerUserValidator } from '#validators/register_user';
+import { loginValidator } from '#validators/login';
 import CacheManager from '../helpers/cache_manager.js';
+import { ensureEmailIsAvailable } from '../helpers/email_availability.js';
 import Ong from '#models/ong';
 export default class AuthController {
   async register({ request, response }: HttpContext) {
-    try {
-      const { fullName, email, password } =
-        await request.validateUsing(registerUserValidator);
-      const user = new User();
-      user.fullName = fullName;
-      user.email = email;
-      user.password = password;
+    const { fullName, email, password } = await request.validateUsing(registerUserValidator);
+    await ensureEmailIsAvailable(email);
 
-      // const { street, cep: CEP } = await brazilFinder.cepFinder(cep);
-      // user.endereco = street;
-      // user.CEP = CEP;
+    const user = new User();
+    user.fullName = fullName;
+    user.email = email;
+    user.password = password;
 
-      await user.save();
+    await user.save();
 
-      const token = JwtService.generateToken(user);
-      JwtService.setAuthCoookie({ response } as HttpContext, token);
+    const token = JwtService.generateToken(user);
+    JwtService.setAuthCoookie({ response } as HttpContext, token);
 
-      return response.status(201).json({ user, token });
-    } catch (error) {
-      return response
-        .status(error.status || 500)
-        .json({ message: 'Error creating user', error: error.message });
-    }
+    return response.status(201).json({ user });
   }
 
   async login({ request, response }: HttpContext) {
-    const { email, password } = request.only(['email', 'password']);
+    const { email, password } = await request.validateUsing(loginValidator);
 
     const results = await Promise.allSettled([
       User.verifyCredentials(email, password),
@@ -48,8 +41,8 @@ export default class AuthController {
     const authUser = user! || ong!;
     const token = JwtService.generateToken(authUser);
     JwtService.setAuthCoookie({ response } as HttpContext, token);
-    console.log('Auth User:', authUser);
-    return response.status(200).json({ authUser, token });
+
+    return response.status(200).json({ authUser });
   }
 
   async logout({ response }: HttpContext) {
@@ -68,14 +61,11 @@ export default class AuthController {
 
     if (currentUser instanceof Ong) {
       await currentUser.load('images');
-      const ong = currentUser.toJSON();
-      const ongData = JSON.stringify(ong);
-      await CacheManager.create(cacheKey, ongData, 3600);
-      return response.status(200).json(ongData);
     }
 
-    const user = JSON.stringify(currentUser);
-    await CacheManager.create(cacheKey, user, 3600);
-    return response.status(200).json(user);
+    const data = currentUser!.toJSON();
+    await CacheManager.create(cacheKey, JSON.stringify(data), 3600);
+
+    return response.status(200).json(data);
   }
 }

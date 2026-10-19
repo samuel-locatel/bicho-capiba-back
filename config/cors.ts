@@ -1,5 +1,8 @@
 import { defineConfig } from '@adonisjs/cors'
 
+const allowedOrigins = ['https://bichocapiba.trackr.fm']
+const localhostOrigin = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/
+
 /**
  * Configuration options to tweak the CORS policy. The following
  * options are documented on the official documentation website.
@@ -8,7 +11,8 @@ import { defineConfig } from '@adonisjs/cors'
  */
 const corsConfig = defineConfig({
   enabled: true,
-  origin: true,
+  origin: (requestOrigin) =>
+    allowedOrigins.includes(requestOrigin) || localhostOrigin.test(requestOrigin),
   methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'],
   headers: true,
   exposeHeaders: [],

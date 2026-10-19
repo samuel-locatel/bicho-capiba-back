@@ -24,7 +24,7 @@ export default class AnimalsService {
     animal.sociavelPessoa = data.sociavel_pessoa || null;
 
     let vacinas = [];
-    const vacinasArray = data.vacinas;
+    const vacinasArray = data.vacinas ?? [];
     for (const vacinaId of vacinasArray) {
       const vacina = await Vacina.query().where('uuid', vacinaId).firstOrFail();
       vacinas.push(vacina.id);
@@ -62,7 +62,20 @@ export default class AnimalsService {
         query.whereNull('deleted_at').select('id', 'url');
       })
       .preload('ong', (query) => {
-        query.select('id', 'nome', 'email', 'telefone');
+        query.select(
+          'id',
+          'nome',
+          'email',
+          'telefone',
+          'rua',
+          'numero',
+          'bairro',
+          'cidade',
+          'estado',
+          'complemento',
+          'latitude',
+          'longitude'
+        );
       });
 
     if (currentUser) {
@@ -92,13 +105,24 @@ export default class AnimalsService {
         'status_animal',
       ])
       .whereNull('deleted_at')
+      .whereNot('status_animal', 'Adotado')
       .preload('fotos', (query) => {
         query.whereNull('deleted_at').select('id', 'url');
       })
       .preload('raca')
       .preload('especie')
       .preload('ong', (query) => {
-        query.select('id', 'nome', 'email', 'telefone', 'bairro', 'cidade', 'estado');
+        query.select(
+          'id',
+          'nome',
+          'email',
+          'telefone',
+          'bairro',
+          'cidade',
+          'estado',
+          'latitude',
+          'longitude'
+        );
       });
 
     if (currentUser) {
@@ -111,8 +135,8 @@ export default class AnimalsService {
     return result;
   }
 
-  static async edit(animalId: string, data: any) {
-    const animal = await Animal.findByOrFail('uuid', animalId);
+  static async edit(animalId: string, data: any, ong: Ong) {
+    const animal = await this.findOwnedAnimal(animalId, ong);
 
     if (data.images) {
       const imagePath = await ImageUpload.upload(data.images, 'animals');
@@ -125,13 +149,17 @@ export default class AnimalsService {
     return animal;
   }
 
-  static async delete(animalId: string) {
-    const animal = await Animal.findByOrFail('uuid', animalId);
+  static async delete(animalId: string, ong: Ong) {
+    const animal = await this.findOwnedAnimal(animalId, ong);
     animal.deletedAt = DateTime.now();
 
     await animal.save();
 
     return animal;
+  }
+
+  private static async findOwnedAnimal(animalId: string, ong: Ong) {
+    return Animal.query().where('uuid', animalId).where('ong_id', ong.id).firstOrFail();
   }
 
   static async fetchFavorites(user: User, pagination: { page: number; limit: number }) {

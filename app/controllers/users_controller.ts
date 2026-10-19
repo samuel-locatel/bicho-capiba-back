@@ -2,61 +2,38 @@ import User from '#models/user';
 import UsersService from '#services/users_service';
 import { updateUserValidator } from '#validators/update_user';
 import type { HttpContext } from '@adonisjs/core/http';
+import AppError from '../helpers/app_error.js';
 
 export default class UsersController {
   async index({ response, currentUser }: HttpContext) {
-    try {
-      const user = currentUser as User;
-
-      if (!user.superUser) {
-        return response.status(403).json({ message: 'Forbidden' });
-      }
-
-      const users = await UsersService.list();
-
-      return response.status(200).json(users);
-    } catch (error) {
-      return response.status(error.status).json(error.message);
+    if (!(currentUser instanceof User) || !currentUser.superUser) {
+      throw AppError.E_FORBIDDEN('Acesso negado');
     }
+
+    const users = await UsersService.list();
+
+    return response.status(200).json(users);
   }
 
-  // async store({ response, request, currentUser }: HttpContext) {
-  //   try {
-  //     const user = currentUser!
-  //     const data = request.body
+  async show({ response, params, currentUser }: HttpContext) {
+    const isSelf = currentUser instanceof User && currentUser.uuid === params.id;
+    const isAdmin = currentUser instanceof User && !!currentUser.superUser;
 
-  //     const newUser = await UsersService.create(data)
-  //     return response.status(201).json(newUser)
-  //   } catch (error) {
-  //     return response.status(error.status).json(error.message)
-  //   }
-  // }
-
-  async show({ response, params }: HttpContext) {
-    try {
-      const user = await UsersService.getUser(params.id);
-      return response.status(200).json(user);
-    } catch (error) {
-      return response.status(error.status).json(error.message);
+    if (!isSelf && !isAdmin) {
+      throw AppError.E_FORBIDDEN('Acesso negado');
     }
+
+    const user = await UsersService.getUser(params.id);
+    return response.status(200).json(user);
   }
 
   async update({ request, response, currentUser }: HttpContext) {
-    try {
-      const user = currentUser as User;
-
-      const data = await request.validateUsing(updateUserValidator);
-      const updatedUser = await UsersService.edit(data, user);
-      return response.status(200).json(updatedUser);
-    } catch (error) {
-      return response.status(error.status).json(error);
+    if (!(currentUser instanceof User)) {
+      throw AppError.E_FORBIDDEN('Apenas adotantes podem editar este perfil');
     }
-  }
 
-  async destroy({ response }: HttpContext) {
-    try {
-    } catch (error) {
-      return response.status(error.status).json(error.message);
-    }
+    const data = await request.validateUsing(updateUserValidator);
+    const updatedUser = await UsersService.edit(data, currentUser);
+    return response.status(200).json(updatedUser);
   }
 }

@@ -7,7 +7,9 @@ export default function ongsRoutes() {
   router
     .group(() => {
       router.get('/', [OngController, 'index']);
-      router.post('/', [OngController, 'store']).use(middleware.optionalAuth());
+      router
+        .post('/', [OngController, 'store'])
+        .use(middleware.rateLimit({ max: 10, windowInSeconds: 60 * 60 }));
       router.put('/', [OngController, 'update']).use(middleware.jwt());
       router.get('/animals', [OngController, 'listOngAnimals']).use(middleware.jwt());
       router.get('/:id', [OngController, 'show']);

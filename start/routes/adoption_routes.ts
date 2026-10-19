@@ -6,11 +6,11 @@ export default function adoptionRoutes() {
 
   router
     .group(() => {
-      router.get('/', [AdoptionsController, 'index']).use(middleware.jwt());
-      router.post('/', [AdoptionsController, 'store']).use(middleware.jwt());
-      //   router.get('/:id', [AdoptionsController, 'show']).use(middleware.jwt());
-      //   router.delete('/:id', [AdoptionsController, 'destroy']).use(middleware.jwt());
-      // router.put('/:id', [AdoptionsController, 'update']).use(middleware.jwt())
+      router.get('/', [AdoptionsController, 'index']);
+      router.post('/', [AdoptionsController, 'store']);
+      router.get('/:id', [AdoptionsController, 'show']);
+      router.put('/:id', [AdoptionsController, 'update']);
     })
-    .prefix('/adoptions');
+    .prefix('/adoptions')
+    .use(middleware.jwt());
 }

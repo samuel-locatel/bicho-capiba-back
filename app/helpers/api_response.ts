@@ -29,10 +29,10 @@ export function responseWithSuccess(response: any, data?: any, extras?: any) {
 }
 
 export function responseWithError(response: any, message: any, ...extras: any) {
-  console.log(message);
+  const status = typeof message?.status === 'number' ? message.status : 500;
 
-  return response.status(message.status).json({
-    status: message.status,
+  return response.status(status).json({
+    status,
     error: {
       message: message.message,
       code: message.code,

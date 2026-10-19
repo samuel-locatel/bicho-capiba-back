@@ -6,8 +6,12 @@ export default function authRoutes() {
 
   router
     .group(() => {
-      router.post('/login', [AuthController, 'login']);
-      router.post('/register', [AuthController, 'register']);
+      router
+        .post('/login', [AuthController, 'login'])
+        .use(middleware.rateLimit({ max: 10, windowInSeconds: 15 * 60 }));
+      router
+        .post('/register', [AuthController, 'register'])
+        .use(middleware.rateLimit({ max: 10, windowInSeconds: 60 * 60 }));
       router.post('/logout', [AuthController, 'logout']);
 
       router

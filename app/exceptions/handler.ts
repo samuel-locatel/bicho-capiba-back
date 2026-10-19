@@ -31,6 +31,16 @@ export default class HttpExceptionHandler extends ExceptionHandler {
       });
     }
 
+    const status = (error as { status?: unknown })?.status;
+    if (error instanceof Error && typeof status === 'number' && status >= 400 && status < 500) {
+      const isNotFound = (error as { code?: string }).code === 'E_ROW_NOT_FOUND';
+
+      return ctx.response.status(status).json({
+        status: 'ERROR',
+        message: isNotFound ? 'Registro não encontrado' : error.message,
+      });
+    }
+
     if (error instanceof Error) {
       // Em produção, não expor detalhes do erro
       if (app.inProduction) {

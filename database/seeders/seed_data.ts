@@ -27,8 +27,8 @@ export default class SeedData extends BaseSeeder {
         cidade: 'Recife',
         estado: 'PE',
         complemento: null,
-        latitude: (Math.random() * 180 - 90).toFixed(6),
-        longitude: (Math.random() * 360 - 180).toFixed(6),
+        latitude: '-8.119000',
+        longitude: '-34.902000',
       },
       {
         nome: 'Amigos dos Animais',
@@ -46,8 +46,8 @@ export default class SeedData extends BaseSeeder {
         cidade: 'Recife',
         estado: 'PE',
         complemento: null,
-        latitude: (Math.random() * 180 - 90).toFixed(6),
-        longitude: (Math.random() * 360 - 180).toFixed(6),
+        latitude: '-8.037000',
+        longitude: '-34.919000',
       },
       {
         nome: 'Vida Animal',
@@ -65,8 +65,8 @@ export default class SeedData extends BaseSeeder {
         cidade: 'Recife',
         estado: 'PE',
         complemento: null,
-        latitude: (Math.random() * 180 - 90).toFixed(6),
-        longitude: (Math.random() * 360 - 180).toFixed(6),
+        latitude: '-8.046000',
+        longitude: '-34.897000',
       },
     ]);
 

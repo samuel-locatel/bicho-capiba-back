@@ -16,6 +16,6 @@ export const UpdateAnimalValidator = vine.compile(
         historia: vine.string().maxLength(500).optional(), 
         sociavel_animal: vine.boolean().optional(), 
         sociavel_pessoa: vine.boolean().optional(), 
-        images: vine.file().optional() 
+        images: vine.file({ size: '5mb', extnames: ['jpg', 'jpeg', 'png', 'webp'] }).optional() 
     })
 )

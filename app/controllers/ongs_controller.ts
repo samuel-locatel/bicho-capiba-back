@@ -9,7 +9,8 @@ import {
 import { updateOngValidator } from '#validators/update_ong';
 import Ong from '#models/ong';
 import AppError from '../helpers/app_error.js';
-// AppError not used here
+import User from '#models/user';
+import JwtService from '#services/jwt_service';
 
 export default class OngsController {
   async index({ request, response }: HttpContext) {
@@ -47,7 +48,7 @@ export default class OngsController {
     try {
       const user = currentUser as Ong;
       if (user instanceof Ong === false) {
-        throw AppError.E_UNAUTHORIZED('Ong not authenticated');
+        throw AppError.E_FORBIDDEN('Apenas ONGs podem editar este perfil');
       }
       const data = await request.validateUsing(updateOngValidator);
       const ong = await OngsService.edit(user, data);
@@ -57,22 +58,29 @@ export default class OngsController {
       return responseWithError(response, error);
     }
   }
-  async delete({ response, params }: HttpContext) {
-    try {
-      const { id } = params;
-      const ong = await OngsService.delete(id);
+  async delete(ctx: HttpContext) {
+    const { response, params, currentUser } = ctx;
+    const isSelf = currentUser instanceof Ong && currentUser.uuid === params.id;
+    const isAdmin = currentUser instanceof User && !!currentUser.superUser;
 
-      return responseWithSuccess(response, ong);
-    } catch (error) {
-      return response.status(error.status).json(error.message);
+    if (!isSelf && !isAdmin) {
+      throw AppError.E_FORBIDDEN('Você não tem permissão para remover esta ONG');
     }
+
+    const ong = await OngsService.delete(params.id);
+
+    if (isSelf) {
+      JwtService.clearTokenCookie(ctx);
+    }
+
+    return responseWithSuccess(response, ong);
   }
 
   async listOngAnimals({ response, currentUser }: HttpContext) {
     try {
       const ong = currentUser as Ong;
       if (ong instanceof Ong === false) {
-        throw AppError.E_UNAUTHORIZED('Ong not authenticated');
+        throw AppError.E_FORBIDDEN('Apenas ONGs podem acessar esta lista');
       }
 
       const animals = await OngsService.listAnimalsByOng(ong);

@@ -15,6 +15,7 @@ import likeRoutes from './routes/like_routes.js';
 import adoptionRoutes from './routes/adoption_routes.js';
 import helperRoutes from './routes/helper_routes.js';
 import userRoutes from './routes/user_routes.js';
+import eventRoutes from './routes/event_routes.js';
 
 router.get('/', async () => {
   return {
@@ -31,5 +32,6 @@ router
     adoptionRoutes();
     helperRoutes();
     likeRoutes();
+    eventRoutes();
   })
   .prefix('/api');

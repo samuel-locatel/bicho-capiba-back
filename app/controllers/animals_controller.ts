@@ -24,20 +24,11 @@ export default class AnimalsController {
   }
 
   async store({ request, response, currentUser }: HttpContext) {
-    try {
-      const ong = currentUser! as Ong;
-      if (!ong) {
-        throw AppError.E_UNAUTHORIZED('Ong not authenticated');
-      }
+    const ong = this.requireOng(currentUser);
+    const data = await request.validateUsing(RegisterAnimalValidator);
+    const animal = await AnimalsService.create(data, ong);
 
-      const data = await request.validateUsing(RegisterAnimalValidator);
-      const animal = await AnimalsService.create(data, ong);
-
-      return responseWithSuccess(response, animal);
-    } catch (error) {
-      console.log(error);
-      return response.status(400).json({ erro: error });
-    }
+    return responseWithSuccess(response, animal);
   }
 
   async show({ response, params, currentUser }: HttpContext) {
@@ -53,36 +44,25 @@ export default class AnimalsController {
     }
   }
 
-  async update({ request, response, params }: HttpContext) {
-    try {
-      const { id } = params;
-      const data = await request.validateUsing(UpdateAnimalValidator);
-      const animal = await AnimalsService.edit(id, data);
+  async update({ request, response, params, currentUser }: HttpContext) {
+    const ong = this.requireOng(currentUser);
+    const data = await request.validateUsing(UpdateAnimalValidator);
+    const animal = await AnimalsService.edit(params.id, data, ong);
 
-      return responseWithSuccess(response, animal);
-    } catch (error) {
-      return response
-        .status(400)
-        .json({ message: 'Error updating animal', error: error.message });
-    }
+    return responseWithSuccess(response, animal);
   }
 
-  async destroy({ response, params }: HttpContext) {
-    try {
-      const { id } = params;
-      const data = await AnimalsService.delete(id);
+  async destroy({ response, params, currentUser }: HttpContext) {
+    const ong = this.requireOng(currentUser);
+    const data = await AnimalsService.delete(params.id, ong);
 
-      return responseWithSuccess(response, data);
-    } catch (error) {
-      return response
-        .status(400)
-        .json({ message: 'Error deleting animal', error: error.message });
-    }
+    return responseWithSuccess(response, data);
   }
 
   async addLike({ response, params, currentUser }: HttpContext) {
+    const user = this.requireAdopter(currentUser);
+
     try {
-      const user = currentUser! as User;
       const { animalId } = params;
 
       const animal = await Animal.findByOrFail('uuid', animalId);
@@ -94,14 +74,15 @@ export default class AnimalsController {
     } catch (error) {
       return response.status(400).json({
         message: 'Erro ao adicionar animal aos favoritos',
-        error: error,
+        error: error.message,
       });
     }
   }
 
   async removeLike({ response, params, currentUser }: HttpContext) {
+    const user = this.requireAdopter(currentUser);
+
     try {
-      const user = currentUser! as User;
       const { animalId } = params;
       const animal = await Animal.findByOrFail('uuid', animalId);
 
@@ -119,8 +100,9 @@ export default class AnimalsController {
   }
 
   async getFavorites({ response, currentUser, request }: HttpContext) {
+    const user = this.requireAdopter(currentUser);
+
     try {
-      const user = currentUser! as User;
       const page = request.input('page', 1);
       const limit = request.input('limit', 10);
 
@@ -135,8 +117,9 @@ export default class AnimalsController {
   }
 
   async checkLike({ response, params, currentUser }: HttpContext) {
+    const user = this.requireAdopter(currentUser);
+
     try {
-      const user = currentUser! as User;
       const { animalId } = params;
 
       const animal = await AnimalsService.fetchLike(animalId, user.id);
@@ -162,5 +145,21 @@ export default class AnimalsController {
         error: error.message,
       });
     }
+  }
+
+  private requireOng(currentUser: HttpContext['currentUser']) {
+    if (!(currentUser instanceof Ong)) {
+      throw AppError.E_FORBIDDEN('Apenas ONGs podem gerenciar animais');
+    }
+
+    return currentUser;
+  }
+
+  private requireAdopter(currentUser: HttpContext['currentUser']) {
+    if (!(currentUser instanceof User)) {
+      throw AppError.E_FORBIDDEN('Apenas adotantes podem favoritar animais');
+    }
+
+    return currentUser;
   }
 }

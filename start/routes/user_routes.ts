@@ -7,10 +7,9 @@ export default function UserRoutes() {
   router
     .group(() => {
       router.get('/', [UserController, 'index']);
-      // router.post('/', [UserController, 'store']);
-      router.put('/', [UserController, 'update']).use(middleware.jwt());
-      router.get('/:id', [UserController, 'show']).use(middleware.jwt());
-      router.delete('/:id', [UserController, 'destroy']).use(middleware.jwt());
+      router.put('/', [UserController, 'update']);
+      router.get('/:id', [UserController, 'show']);
     })
-    .prefix('/users');
+    .prefix('/users')
+    .use(middleware.jwt());
 }

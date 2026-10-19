@@ -1,10 +1,10 @@
 import User from '#models/user';
+import hash from '@adonisjs/core/services/hash';
+import AppError from '../helpers/app_error.js';
+import CacheManager from '../helpers/cache_manager.js';
+import { ensureEmailIsAvailable } from '../helpers/email_availability.js';
 
 export default class UsersService {
-  static async create(data: any) {
-    return data;
-  }
-
   static async list() {
     const users = await User.all();
     return users;
@@ -16,16 +16,23 @@ export default class UsersService {
     return user;
   }
 
-  static async edit(data: any, user: User) {
-    user.merge(data);
+  static async edit(data: Record<string, any>, user: User) {
+    const { currentPassword, ...changes } = data;
+
+    if (changes.email && changes.email !== user.email) {
+      await ensureEmailIsAvailable(changes.email, user);
+    }
+
+    if (changes.password) {
+      const isValid = currentPassword && (await hash.verify(user.password, currentPassword));
+      if (!isValid) {
+        throw AppError.E_UNPROCESSABLE_ENTITY('Senha atual incorreta');
+      }
+    }
+
+    user.merge(changes);
     await user.save();
-
-    return user;
-  }
-
-  static async delete(UserId: string) {
-    const user = await User.findByOrFail('uuid', UserId);
-    await user.delete();
+    await CacheManager.delete(`user:${user.uuid}`);
 
     return user;
   }

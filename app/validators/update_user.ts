@@ -9,6 +9,7 @@ export const updateUserValidator = vine.compile(
     dataNascimento: vine.date().optional(),
     cpf: vine.string().trim().optional(),
     password: vine.string().minLength(6).maxLength(255).optional(),
+    currentPassword: vine.string().optional().requiredIfExists('password'),
 
     // Dados de endereco
     cep: vine.string().minLength(8).maxLength(9).optional(),

@@ -17,6 +17,6 @@ export const registerOngValidator = vine.compile(
     complemento: vine.string().maxLength(255).optional(),
     quantidadeAnimais: vine.number().min(0),
     responsavelTecnico: vine.string().maxLength(255),
-    images: vine.file().optional(),
+    images: vine.file({ size: '5mb', extnames: ['jpg', 'jpeg', 'png', 'webp'] }).optional(),
   })
 );
