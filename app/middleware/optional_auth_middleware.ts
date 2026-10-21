@@ -12,9 +12,13 @@ export default class OptionalAuthMiddleware {
       return next();
     }
     const decoded = JwtService.verifyToken(token);
+    if (!decoded?.userId) {
+      ctx.currentUser = undefined;
+      return next();
+    }
 
-    const user = await User.findBy('uuid', decoded?.userId);
-    const ong = await Ong.findBy('uuid', decoded?.userId);
+    const user = await User.findBy('uuid', decoded.userId);
+    const ong = await Ong.findBy('uuid', decoded.userId);
 
     ctx.currentUser = user || ong || undefined;
     return next();
